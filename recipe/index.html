@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Recipe</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+
+<body>
+  <header>
+    <div class="container">
+      <h1>Recipe</h1>
+      <nav>
+        <a href="../feed/">Feed</a>
+      </nav>
+    </div>
+  </header>
+  <main class="container">
+    <div id="recipeDetails" class="card"></div>
+    <div>
+      <button id="likeBtn">👍</button>
+      <button id="dislikeBtn">👎</button>
+    </div>
+
+    <h2>Комментарии</h2>
+    <div id="commentsList"></div>
+    <div class="pagination">
+      <button id="prevCommentsBtn">« Prev.</button>
+      <button id="nextCommentsBtn">Next. »</button>
+    </div>
+
+    <form id="commentForm">
+      <textarea id="commentText" placeholder="Leave a comment"></textarea>
+      <button type="submit">Send</button>
+    </form>
+  </main>
+
+  <script type="module">
+    import { getRecipe, ratePost, getComments, createComment, deleteRecipe, deleteComment, getCurrentUser } from "../js/api.js";
+    import { API_BASE_URL } from "../js/config.js";
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const recipeId = urlParams.get('id');
+    if (!recipeId) {
+      alert("No recipe ID specified!");
+      window.location.href = "../feed/";
+    }
+
+    let currentUser = null;
+    const recipeDetails = document.getElementById('recipeDetails');
+
+    async function loadCurrentUser() {
+      try {
+        currentUser = await getCurrentUser();
+      } catch (err) {
+        currentUser = null;
+      }
+    }
+
+    async function loadRecipe() {
+      try {
+        await loadCurrentUser();
+        const recipe = await getRecipe(recipeId);
+        renderRecipe(recipe);
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    }
+
+    function renderRecipe(recipe) {
+      const avatarSrc = recipe.author.avatar
+        ? `${API_BASE_URL}/file/${recipe.author.avatar}`
+        : `../default-avatar.png`;
+      const previewImage = recipe.preview
+        ? `<img src="${API_BASE_URL}/file/${recipe.preview}" alt="preview" style="max-width: 200px;" />`
+        : "";
+
+      let deleteBtnHTML = "";
+      if (currentUser && (currentUser.id === recipe.author.id || currentUser.is_admin)) {
+        deleteBtnHTML = `<button id="deletePostBtn">Delete post</button>`;
+      }
+
+      recipeDetails.innerHTML = `
+          <div class="card-header">
+            <img class="avatar" src="${avatarSrc}" alt="avatar"/>
+            <span>${recipe.author.username}</span>
+          </div>
+          <div class="card-content">
+            <h3>${recipe.title}</h3>
+            <p style="white-space: pre-wrap;">Rating: ${recipe.rating}</p>
+            <p style="white-space: pre-wrap;">${recipe.text}</p>
+            ${previewImage}
+            <p>Created: ${new Date(recipe.created_at).toLocaleString()}</p>
+            ${deleteBtnHTML}
+          </div>
+        `;
+
+      const deletePostBtn = document.getElementById("deletePostBtn");
+      if (deletePostBtn) {
+        deletePostBtn.addEventListener('click', async () => {
+          if (confirm("Are you sure you want to delete this post?")) {
+            try {
+              await deleteRecipe(recipe.id);
+              alert("Post deleted");
+              window.location.href = "../feed/";
+            } catch (err) {
+              alert("Error: " + err.message);
+            }
+          }
+        });
+      }
+    }
+
+    document.getElementById('likeBtn').addEventListener('click', async () => {
+      try {
+        await ratePost(recipeId, true);
+        loadRecipe();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+    document.getElementById('dislikeBtn').addEventListener('click', async () => {
+      try {
+        await ratePost(recipeId, false);
+        loadRecipe();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    let currentCommentPage = 1;
+    const commentsList = document.getElementById('commentsList');
+    const prevCommentsBtn = document.getElementById('prevCommentsBtn');
+    const nextCommentsBtn = document.getElementById('nextCommentsBtn');
+
+    async function loadComments(page) {
+      try {
+        await loadCurrentUser();
+        const result = await getComments(recipeId, page);
+        commentsList.innerHTML = "";
+        const { data } = result;
+        if (data.length === 0 && page > 1) {
+          alert("No more comments!");
+          currentCommentPage--;
+          return;
+        }
+        data.forEach(comment => {
+          const userAvatar = comment.user.avatar
+            ? `${API_BASE_URL}/file/${comment.user.avatar}`
+            : `../default-avatar.png`;
+
+          let deleteCommentBtnHTML = "";
+          if (currentUser && (currentUser.id === comment.user.id || currentUser.is_admin)) {
+            deleteCommentBtnHTML = `<button class="deleteCommentBtn" data-id="${comment.id}">Delete</button>`;
+          }
+
+          const cmt = document.createElement('div');
+          cmt.className = 'card';
+          cmt.innerHTML = `
+              <div class="card-header">
+                <img class="avatar" src="${userAvatar}" alt="avatar"/>
+                <span>${comment.user.username}</span>
+              </div>
+              <div class="card-content">
+                <p style="white-space: pre-wrap;">${comment.text}</p>
+                <small>${new Date(comment.created_at).toLocaleString()}</small>
+                ${deleteCommentBtnHTML}
+              </div>
+            `;
+          commentsList.appendChild(cmt);
+        });
+
+        document.querySelectorAll('.deleteCommentBtn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const commentId = e.target.getAttribute('data-id');
+            if (confirm("Delete this comment?")) {
+              try {
+                await deleteComment(commentId);
+                alert("Comment deleted");
+                currentCommentPage = 1;
+                loadComments(currentCommentPage);
+              } catch (err) {
+                alert("Error: " + err.message);
+              }
+            }
+          });
+        });
+      } catch (err) {
+        console.error(err);
+        alert(err.message);
+      }
+    }
+
+    prevCommentsBtn.addEventListener('click', () => {
+      if (currentCommentPage > 1) {
+        currentCommentPage--;
+        loadComments(currentCommentPage);
+      }
+    });
+    nextCommentsBtn.addEventListener('click', () => {
+      currentCommentPage++;
+      loadComments(currentCommentPage);
+    });
+
+    const commentForm = document.getElementById('commentForm');
+    commentForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = document.getElementById('commentText').value.trim();
+      if (!text) return;
+      try {
+        await createComment({ post_id: parseInt(recipeId), text });
+        document.getElementById('commentText').value = "";
+        loadComments(currentCommentPage);
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    });
+
+    loadRecipe();
+    loadComments(currentCommentPage);
+  </script>
+</body>
+
+</html>

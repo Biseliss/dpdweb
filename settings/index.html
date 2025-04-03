@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Settings</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+
+<body>
+  <header>
+    <div class="container">
+      <h1>Settings</h1>
+      <nav>
+        <a href="../feed/">Лента</a>
+      </nav>
+    </div>
+  </header>
+  <main class="container">
+    <div id="currentUserInfo" class="card"></div>
+    <form id="settingsForm" enctype="multipart/form-data">
+      <input type="text" id="username" placeholder="New username" />
+      <input type="email" id="email" placeholder="New email" />
+      <input type="text" id="name" placeholder="Name" />
+      <input type="text" id="surname" placeholder="Surname" />
+      <label>Аватар: <input type="file" id="avatar" name="avatar" /></label>
+      <button type="submit">Save changes</button>
+    </form>
+    <button id="logoutBtn">Logout</button>
+  </main>
+
+  <script type="module">
+    import { getCurrentUser, editCurrentUser, logoutUser } from "../js/api.js";
+    import { API_BASE_URL } from "../js/config.js";
+
+    const currentUserInfo = document.getElementById('currentUserInfo');
+    const settingsForm = document.getElementById('settingsForm');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    async function loadCurrentUser() {
+      try {
+        const user = await getCurrentUser();
+        renderUser(user);
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    }
+
+    function renderUser(user) {
+      const avatarSrc = user.avatar
+        ? `${API_BASE_URL}/file/${user.avatar}`
+        : `../default-avatar.png`;
+
+      currentUserInfo.innerHTML = `
+          <div class="card-header">
+            <img class="avatar" src="${avatarSrc}" alt="avatar"/>
+            <span>@${user.username}</span>
+          </div>
+          <div class="card-content">
+            <p>Email: ${user.email}</p>
+            <p>Name: ${user.name || ''}</p>
+            <p>Surname: ${user.surname || ''}</p>
+          </div>
+        `;
+    }
+
+    settingsForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData();
+      const username = document.getElementById('username').value;
+      const email = document.getElementById('email').value;
+      const name = document.getElementById('name').value;
+      const surname = document.getElementById('surname').value;
+      const avatar = document.getElementById('avatar').files[0];
+
+      if (username) formData.append('username', username);
+      if (email) formData.append('email', email);
+      if (name) formData.append('name', name);
+      if (surname) formData.append('surname', surname);
+      if (avatar) formData.append('avatar', avatar);
+
+      try {
+        await editCurrentUser(formData);
+        alert("Information updated successfully!");
+        loadCurrentUser();
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        await logoutUser();
+        window.location.href = "../login/";
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    loadCurrentUser();
+  </script>
+</body>
+
+</html>

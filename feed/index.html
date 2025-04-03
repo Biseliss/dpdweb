@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Feed</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+
+<body>
+  <header>
+    <div class="container">
+      <h1>Recepies</h1>
+      <nav id="navLinks">
+        <a href="../login/">Login</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="feed"></div>
+    <div class="pagination">
+      <button id="prevBtn">« Prev.</button>
+      <button id="nextBtn">Next. »</button>
+    </div>
+  </main>
+
+  <script type="module">
+    import { getFeed, getCurrentUser } from "../js/api.js";
+    import { API_BASE_URL } from "../js/config.js";
+
+    async function updateNav() {
+      try {
+        const user = await getCurrentUser();
+        let links = `<a href="../settings/">Settings</a> | <a href="../feed/">Feed</a> | <a href="../create-post/">New post</a>`;
+        if (user.is_admin) {
+          links += ` | <a href="../admin/">Admin panel</a>`;
+        }
+        document.getElementById("navLinks").innerHTML = links;
+      } catch (err) {
+        document.getElementById("navLinks").innerHTML = `<a href="../login/">Login</a>`;
+      }
+    }
+    updateNav();
+
+    let currentPage = 1;
+    const feedContainer = document.getElementById('feed');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    async function loadFeed(page = 1) {
+      try {
+        const posts = await getFeed(page);
+        feedContainer.innerHTML = "";
+        if (posts.length === 0 && page > 1) {
+          alert("No more posts!");
+          currentPage--;
+          return;
+        }
+        posts.forEach(post => {
+          const avatarSrc = post.author.avatar
+            ? `${API_BASE_URL}/file/${post.author.avatar}`
+            : `../default-avatar.png`;
+          const previewImg = post.preview
+            ? `<img src="${API_BASE_URL}/file/${post.preview}" alt="preview" style="max-width: 200px;" />`
+            : "";
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+              <div class="card-header">
+                <img class="avatar" src="${avatarSrc}" alt="avatar"/>
+                <span>@${post.author.username}</span>
+              </div>
+              <div class="card-content">
+                <h3>${post.title}</h3>
+                <p>Rating: ${post.rating}</p>
+                <p>${post.text}</p>
+                ${previewImg}
+                <br/>
+                <a href="../recipe/?id=${post.id}">Read more</a>
+              </div>
+            `;
+          feedContainer.appendChild(card);
+        });
+      } catch (err) {
+        console.error(err);
+        alert(err.message);
+      }
+    }
+
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        loadFeed(currentPage);
+      }
+    });
+    nextBtn.addEventListener('click', () => {
+      currentPage++;
+      loadFeed(currentPage);
+    });
+    loadFeed(currentPage);
+  </script>
+</body>
+
+</html>

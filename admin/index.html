@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin panel</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+
+<body>
+  <header>
+    <div class="container">
+      <h1>Admin panel</h1>
+      <nav>
+        <a href="../feed/">Feed</a>
+      </nav>
+    </div>
+  </header>
+  <main class="container">
+    <div id="usersList"></div>
+  </main>
+
+  <script type="module">
+    import { getAllUsers, toggleAdmin, adminDeleteUser, adminDeleteAvatar } from "../js/api.js";
+    import { API_BASE_URL } from "../js/config.js";
+
+    const usersList = document.getElementById('usersList');
+
+    async function loadUsers() {
+      try {
+        const users = await getAllUsers();
+        usersList.innerHTML = "";
+        users.forEach(u => {
+          const avatarSrc = u.avatar
+            ? `${API_BASE_URL}/file/${u.avatar}`
+            : `../default-avatar.png`;
+
+          const deleteAvatarButton = u.avatar
+            ? `<button data-id="${u.id}" class="deleteAvatarBtn">Delete avatar</button>`
+            : "";
+
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+              <div class="card-header">
+                <img class="avatar" src="${avatarSrc}" alt="avatar"/>
+                <span>@${u.username}</span>
+              </div>
+              <div class="card-content">
+                <p>Email: ${u.email}</p>
+                <p>Name: ${u.name || ''}</p>
+                <p>Surname: ${u.surname || ''}</p>
+                <p>Is admin: ${u.is_admin}</p>
+                <button data-id="${u.id}" class="toggleAdminBtn">Toggle Admin</button>
+                <button data-id="${u.id}" class="deleteUserBtn">Delete user</button>
+                ${deleteAvatarButton}
+              </div>
+            `;
+          usersList.appendChild(card);
+        });
+
+        document.querySelectorAll('.toggleAdminBtn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const userId = e.target.getAttribute('data-id');
+            try {
+              await toggleAdmin(userId);
+              alert("Permissions changed");
+              loadUsers();
+            } catch (err) {
+              alert(err.message);
+            }
+          });
+        });
+
+        document.querySelectorAll('.deleteUserBtn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const userId = e.target.getAttribute('data-id');
+            if (confirm("Are you sure want to delete this user?")) {
+              try {
+                await adminDeleteUser(userId);
+                alert("User deleted");
+                loadUsers();
+              } catch (err) {
+                alert(err.message);
+              }
+            }
+          });
+        });
+
+        document.querySelectorAll('.deleteAvatarBtn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const userId = e.target.getAttribute('data-id');
+            if (confirm("Are you sure want to delete this user's avatar?")) {
+              try {
+                await adminDeleteAvatar(userId);
+                alert("Avatar deleted");
+                loadUsers();
+              } catch (err) {
+                alert(err.message);
+              }
+            }
+          });
+        });
+
+      } catch (err) {
+        console.error(err);
+        alert(err.message);
+      }
+    }
+
+    loadUsers();
+  </script>
+</body>
+
+</html>

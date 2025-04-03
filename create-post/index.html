@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Create new post</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+
+<body>
+  <header>
+    <div class="container">
+      <h1>Create post</h1>
+      <nav id="navLinks">
+        <a href="../login/">Login</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <form id="createPostForm" enctype="multipart/form-data">
+      <label for="title">Title:</label>
+      <input type="text" id="title" name="title" required />
+
+      <label for="text">Text:</label>
+      <textarea id="text" name="text" rows="6"></textarea>
+
+      <label for="preview">Preview (image):</label>
+      <input type="file" id="preview" name="preview" accept="image/*" />
+
+      <button type="submit">Create post</button>
+    </form>
+  </main>
+
+  <script type="module">
+    import { createRecipe, getCurrentUser } from "../js/api.js";
+
+    // подумать над переносом в отдельный js файл
+    async function updateNav() {
+      try {
+        const user = await getCurrentUser();
+        let links = `<a href="../settings/">Settings</a> | <a href="../feed/">Feed</a>`;
+        if (user.is_admin) {
+          links += ` | <a href="../admin/">Admin panel</a>`;
+        }
+        document.getElementById("navLinks").innerHTML = links;
+      } catch (err) {
+        document.getElementById("navLinks").innerHTML = `<a href="../login/">Login</a>`;
+      }
+    }
+    updateNav();
+
+    const form = document.getElementById('createPostForm');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData();
+
+      const title = document.getElementById('title').value.trim();
+      const text = document.getElementById('text').value.trim();
+      const previewFile = document.getElementById('preview').files[0];
+
+      if (!title) {
+        alert("The title is required");
+        return;
+      }
+      formData.append('title', title);
+      formData.append('text', text);
+      if (previewFile) {
+        formData.append('preview', previewFile);
+      }
+
+      try {
+        const newPost = await createRecipe(formData);
+        alert("Post was created successfully");
+        window.location.href = `../recipe/?id=${newPost.id}`;
+      } catch (err) {
+        console.error(err);
+        alert("Error while creating the post: " + err.message);
+      }
+    });
+  </script>
+</body>
+
+</html>

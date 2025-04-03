@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Registration</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+
+<body>
+  <header>
+    <div class="container">
+      <h1>Registration</h1>
+    </div>
+  </header>
+  <main class="container">
+    <form id="registerForm">
+      <input type="text" id="username" placeholder="Username" required />
+      <input type="email" id="email" placeholder="Email" required />
+      <input type="password" id="password" placeholder="Password" required />
+      <input type="text" id="name" placeholder="Name" />
+      <input type="text" id="surname" placeholder="Surname" />
+      <button type="submit">Зарегистрироваться</button>
+    </form>
+    <p>
+      Already have an account?
+      <a href="../login/">Login</a>
+    </p>
+  </main>
+
+  <script type="module">
+    import { registerUser } from "../js/api.js";
+
+    const form = document.getElementById('registerForm');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        username: document.getElementById('username').value,
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value,
+        name: document.getElementById('name').value,
+        surname: document.getElementById('surname').value
+      };
+
+      try {
+        await registerUser(payload);
+        alert("Registration successful!");
+        window.location.href = "../login/";
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    });
+  </script>
+</body>
+
+</html>
