@@ -65,6 +65,7 @@
             <p>Surname: ${user.surname || ''}</p>
           </div>
         `;
+      window.userAvatar = avatarSrc;
     }
 
     let currentPage = 1;
@@ -87,7 +88,7 @@
           card.className = 'card';
           card.innerHTML = `
               <div class="card-header">
-                <img class="avatar" src="../default-avatar.png" alt="avatar"/>
+                <img class="avatar" src="${window.userAvatar || '../default-avatar.png'}" alt="avatar"/>
                 <span>${username}</span>
               </div>
               <div class="card-content">
