@@ -17,4 +17,3 @@ git clone https://github.com/Biseliss/dpdweb.git && cd dpdweb
 3. Configure web server
     1. Copy the content of the repository to your web server root directory (e.g. `/var/www/html/`)
     2. Set permissions for the web server user (e.g. `www-data`):
-```
