@@ -83,7 +83,9 @@
 
       recipeDetails.innerHTML = `
           <div class="card-header">
-            <img class="avatar" src="${avatarSrc}" alt="avatar"/>
+            <a href="../profile?username=${recipe.author.username}">
+              <img class="avatar" src="${avatarSrc}" alt="avatar"/>
+            </a>
             <span>${recipe.author.username}</span>
           </div>
           <div class="card-content">
@@ -159,7 +161,9 @@
           cmt.className = 'card';
           cmt.innerHTML = `
               <div class="card-header">
-                <img class="avatar" src="${userAvatar}" alt="avatar"/>
+                <a href="../profile?username=${u.username}">
+                  <img class="avatar" src="${userAvatar}" alt="avatar"/>
+                </a>
                 <span>${comment.user.username}</span>
               </div>
               <div class="card-content">

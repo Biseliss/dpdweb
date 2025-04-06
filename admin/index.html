@@ -43,7 +43,9 @@
           card.className = 'card';
           card.innerHTML = `
               <div class="card-header">
-                <img class="avatar" src="${avatarSrc}" alt="avatar"/>
+                <a href="../profile?username=${u.username}">
+                  <img class="avatar" src="${avatarSrc}" alt="avatar"/>
+                </a>
                 <span>@${u.username}</span>
               </div>
               <div class="card-content">

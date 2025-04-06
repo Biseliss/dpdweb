@@ -53,7 +53,9 @@
 
       currentUserInfo.innerHTML = `
           <div class="card-header">
-            <img class="avatar" src="${avatarSrc}" alt="avatar"/>
+            <a href="../profile?username=${user.username}">
+              <img class="avatar" src="${avatarSrc}" alt="avatar"/>
+            </a>
             <span>@${user.username}</span>
           </div>
           <div class="card-content">
